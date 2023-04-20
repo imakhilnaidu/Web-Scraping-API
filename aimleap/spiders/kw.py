@@ -5,7 +5,6 @@ from scrapy import Request
 from ..items import AgentItem
 from scrapy.loader import ItemLoader
 
-DETAIL_URL = ""
 
 class KwSpider(scrapy.Spider):
     name = "kw"
@@ -48,15 +47,20 @@ class KwSpider(scrapy.Spider):
     'x-shared-secret': 'MjFydHQ0dndjM3ZAI0ZHQCQkI0BHIyM='
     }
     
+    # Making request to api using below function
+    # By passing payload and headers
     def start_requests(self):
         yield Request(self.url, method="POST", headers=self.headers, callback=self.parse, body=self.payload)
         
-    
+    # Getting all agents data in the form of response
     def parse(self, response):
         api = response.json()
-        items = api.get("data", {}).get("SearchAgentQuery", {}).get("result", {}).get("agents", {}).get("edges")
-        for item in items:
-            id = item.get("node", {}).get("id")
+        agents = api.get("data", {}).get("SearchAgentQuery", {}).get("result", {}).get("agents", {}).get("edges")
+        
+        # Looping through each agent
+        # Getting agent ID
+        for agent in agents:
+            id = agent.get("node", {}).get("id")
             payload = json.dumps({
                 "operationName": "agentProfileQuery",
                 "variables": {
@@ -64,9 +68,12 @@ class KwSpider(scrapy.Spider):
                 },
                 "query": "query agentProfileQuery($id: IDProfileAgentScalar, $personID: Int, $slug: String) {\n  AgentProfileQuery(id: $id, personID: $personID, slug: $slug) {\n    id\n    isAgent\n    isActive\n    name {\n      full\n      initials\n      given\n      __typename\n    }\n    team\n    insights {\n      totalCount\n      __typename\n    }\n    startDate\n    numberOfSales\n    location {\n      address {\n        state\n        city\n        __typename\n      }\n      __typename\n    }\n    bio\n    kwuid\n    neighborhoods {\n      display\n      __typename\n    }\n    languages\n    phone {\n      entries {\n        ... on ContactSetEntryEmail {\n          email\n          __typename\n        }\n        ... on ContactSetEntryMobile {\n          number\n          __typename\n        }\n        ... on ContactSetEntryLandline {\n          number\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    image\n    website\n    brokeragePhone\n    brokerageLicense\n    agentLicenses {\n      licenseNumber\n      state\n      __typename\n    }\n    specialties\n    serviceAreas\n    isAgentLuxuryEnabled\n    designations\n    logo {\n      dba_logo\n      team_logo\n      __typename\n    }\n    marketCenter {\n      market_center_name\n      market_center_address1\n      market_center_address2\n      __typename\n    }\n    social {\n      facebook\n      instagram\n      linkedin\n      twitter\n      youtube\n      __typename\n    }\n    __typename\n  }\n}\n"
             })
+            
+            # Making another request to get each agent separately
             yield Request(self.url, method="POST", headers=self.headers, callback=self.parse_agent, body=payload)
 
-    
+    # Getting agent data in the form of response
+    # Mapping fields and returning each agent
     def parse_agent(self, response):
         agent = response.json()
         agent = agent.get("data", {}).get("AgentProfileQuery", {})
