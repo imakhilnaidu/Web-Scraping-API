@@ -24,25 +24,6 @@ def get_contact(details):
     return {"mobile": mob[0] if mob else "", "office": off[0] if off else ""}
 
 
-def get_mob(details):
-    if details.get("__typename") == "ContactSetEntryMobile":
-        mob = details.get("number")
-        if mob:
-            return mob
-        else:
-            return ""
-
-
-
-def get_off(details):
-    if details.get("__typename") == "ContactSetEntryLandline":
-        off = details.get("number")
-        if off:
-            return off
-        else:
-            return ""
-
-
 def get_location(agent):
     city = agent.get("city", "")
     state = agent.get("state", "")
